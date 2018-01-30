@@ -1,1 +1,1 @@
-# Statistical_Learning_Theory
+# Statistical Learning Theory

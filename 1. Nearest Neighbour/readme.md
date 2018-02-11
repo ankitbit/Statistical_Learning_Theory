@@ -1,6 +1,4 @@
-
-Imagine that were using only one value of K for fitting our algorithm on the dataset (Although, we could have used a list of values of K where K maybe anything between {1,2,....,N} where N=number of training samples) . The K-nearest neighbour algorithm for regression is defined as follows-
-<br>
-**Algorithm**
-<br>
-* **Input**: training samples $ (X_i, Y_i) $
+### References
+* [Concept of K-Nearest Neighbour](https://www.analyticsvidhya.com/blog/2015/08/learning-concept-knn-algorithms-programming/)- Implementation of the algorithm along with some practical issue handling
+* [Classification using K-Nearest Neighbours](https://github.com/mlgruby/knn-classification)
+* [Regression using K-Nearest Neighbours](http://members.cbio.mines-paristech.fr/~jvert/svn/tutorials/practical/knnregression/knnregression.R)

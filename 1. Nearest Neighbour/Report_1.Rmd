@@ -1,0 +1,183 @@
+
+---
+title: K-Nearest Neighbours
+author: ROBERT CARULLA & ANKIT TEWARI 
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Introduction
+In this session, we have an independent variable $X$ and a dependent variable $Y$ which we will try to predict using the regression based on K-Nearest Neighbour method. We define the regression function based on K-Nearest Neighbours in a similar way as we had previously studied based on least squares estimates. 
+The dataset that we have used consist of X being the **lstat** and Y being the **medv** and our objective in the present scenario is to estmate the regression function of X using the Y. 
+```{R data_creation}
+library(MASS)
+data("Boston")
+X <- Boston$lstat
+Y <- Boston$medv
+mydf <- as.data.frame( cbind(X,Y) )
+```
+Let us see the structure of our dataset using the **str** fucntion-
+```{R structure_of_data}
+str(mydf)
+```
+
+An exploratory data analysis of the dataset using the scatterplot is described here below-
+```{R scatterplot of data}
+library(ggplot2)
+theme_update(plot.title = element_text(hjust = 0.5))
+g <- ggplot(data = mydf, aes(x= X, y= Y))
+g + geom_point(color="orange") + 
+  ggtitle("Median Housing Value  versus Proportion of Lower Status Population")+
+  labs(x= "Proportion of Lower Status Population", y= "Median Housing Value")
+  
+```
+The scatterplot between X and Y suggests a possible relationship between X and Y and therefore we can conclude that Y varies with X as being some function of X (although precisely, a non linear relationship between X and Y sounds more obvious for e.g. the exponential decay of Y with respect to X).  
+
+
+## Method
+
+We define the K-nearest neighbour estimator $m(t)$ = $E(Y | X = t)$ for $t$ as
+$$ \hat{m}(t) = \frac{1}{k} \sum_{i \in N_k (t)}^{} y_i  $$ where $t \in \mathbb{R}$ can be a vector of numeric values. So, the following function of code implements the algorithm for the estimator $\hat{m}(t)$. 
+```{R KNN_Regression_Function}
+knn.reg <- function(klist,x.train,y.train,x.test) {
+  x.train <- as.data.frame(x.train)
+  x.test  <- as.data.frame(x.test)
+  n.train <- nrow(as.data.frame(x.train))
+  n.test <- nrow(as.data.frame(x.test))
+  
+  # Matrix to store predictions
+  p.test <- matrix(NA, n.test, length(klist))
+  
+  # Vector to store the distances of a point to the training points
+  dsq <- numeric(n.train)
+  
+  # Loop on the test instances
+  for (tst in 1:n.test)
+  {
+    # Compute distances to training instances
+    for (trn in 1:n.train)
+    {
+      dsq[trn] <- sum((x.train[trn,] - x.test[tst,])^2)
+    }
+    
+    # Sort distances from smallest to largest
+    ord <- order(dsq)
+    
+    # Make prediction by averaging the k nearest neighbors
+    for (ik in 1:length(klist)) {
+      p.test[tst,ik] <- mean(y.train[ord[1:klist[ik]]])
+    }
+  }
+  
+  # Return the matrix of predictions
+  invisible(p.test)
+}
+
+```
+So, we may define a sequence of values from 1 to 40 and store this sequence as a vector $t$ such that $t= \{1,2, ...., 40 \}$. Now, using a value of $K=50$, we will attempt to fit the nearest neighbour algoritm as a regression function for estimating $m(t)$ using the sequence $t$ 
+
+```{R model_fitting}
+t <- seq(40)
+klist <- c(10,20,30,40,50,60,70)
+predictions <- knn.reg(klist, X,Y,t)
+#fitted <- knn.reg(klist, X,Y,X)
+(predictions) 
+
+```
+
+
+## Results
+The results based on our implementation of the regression using the K-Nearest Neighbour algorithm are described in the below in terms of the fitted blue regression curve in the plot below. 
+
+```{R data_plot}
+plot(X, Y, pch=16, col = "tomato", main = "Nearest Neighbour Fit using K=50")
+points(t, predictions[,5], type="l", col="steelblue", lwd=3)
+```
+
+```{R}
+par(mfrow=c(2,3))
+plot(X, Y, pch=16, col = "tomato", main = "K=10")
+points(t, predictions[,1], type="l", col="blue", lwd=3)
+
+plot(X, Y, pch=16, col = "tomato", main = "K=20")
+points(t, predictions[,2], type="l", col="green", lwd=3)
+
+plot(X, Y, pch=16, col = "tomato", main = "K=30")
+points(t, predictions[,3], type="l", col="yellow", lwd=3)
+
+plot(X, Y, pch=16, col = "tomato", main = "K=40")
+points(t, predictions[,4], type="l", col="black", lwd=3)
+
+plot(X, Y, pch=16, col = "tomato", main = "K=60")
+points(t, predictions[,6], type="l", col="maroon", lwd=3)
+
+plot(X, Y, pch=16, col = "tomato", main = "K=70")
+points(t, predictions[,7], type="l", col="grey", lwd=3)
+
+```
+
+In order to examine the fit of our regression model, we have used the **geom_smooth** fuction from the ggplot2 package to visually examine the fit. The model fit using the LOESS Curve Fitting (Local Regression) method is descrived below in form of the blue curve. We can observe that it almost follows the similar fit that we had obtained using our method.
+
+Also, we had tried to further go on towards comparing the model fit visually using the fits of "Generalized Linear Models". The fit obtained using a standard GLM method with families gaussian, log normal and gamma respectively are described below-
+```{R}
+l <- ggplot(data = mydf, aes(x= X, y= Y))
+l <- l + geom_point(color="orange") + 
+  geom_smooth(method = "glm", 
+              method.args = list(family = "gaussian"), se=F)
+
+g <- ggplot(data = mydf, aes(x= X, y= Y))
+g <- g + geom_point(color="orange") +
+  geom_smooth(method = "loess", se=F)
+
+m <- ggplot(data = mydf, aes(x= X, y= Y))
+m <- m + geom_point(color="orange") + 
+  geom_smooth(method = "glm", 
+              method.args = list(family = gaussian(link="log")), se=F)
+
+
+n <- ggplot(data = mydf, aes(x= X, y= Y))
+n <- n + geom_point(color="orange") + 
+  geom_smooth(method = "glm", 
+              method.args = list(family = Gamma(link = "inverse")), se=F)
+
+library(gridExtra)
+grid.arrange(g,l, m, n, nrow=2,ncol=2)
+
+```
+
+
+
+
+
+## Discussions
+In order to determine, how good we have fitted our model, we have tried to compare the result of fit on predicted values of $t$ using the generalized linear models with families gaussian, log normal and gamma. The result can be compared using the values of mean squared error below-
+```{R}
+glm_gaussian <- glm(Y~X, family = gaussian(link = "identity"))
+glm_log_normal <- glm(Y~X, family = gaussian(link = "log"))
+glm_gamma <- glm(Y~X, family = Gamma(link = "inverse"))
+
+#t <- as.data.frame(t)
+glm_gaussian_prediction <-predict(glm_gaussian, 
+                                  data.frame(X =seq(40)), type = "response")
+glm_lognormal_prediction <-predict(glm_log_normal, 
+                                   data.frame(X =seq(40)), type = "response")
+glm_gamma_prediction <-predict(glm_gamma, 
+                               data.frame(X =seq(40)), type = "response")
+
+mse_gaussian <- apply((glm_gaussian_prediction - predictions)^2 , 2, mean)
+mse_lognormal <- apply((glm_lognormal_prediction - predictions)^2 , 2, mean)
+mse_gamma <- apply((glm_gamma_prediction - predictions)^2 , 2, mean)
+
+print(mse_gaussian)
+print(mse_lognormal)
+print(mse_gamma)
+
+```
+
+Also, we can understand that for a very small as well as very large value of K, we have problem in overfitting and underfitting. Textual references suggest that a proper value of K can be obtained by cross validation and using Elbow method.
+
+### Conclusion
+It had been investigated thoroughly how this function performs for different values of K. Also, we understood how varying the K changes decision boundary. It now becomes imperative to learn how cross validation works in order to choose correct K. 
+## References
+

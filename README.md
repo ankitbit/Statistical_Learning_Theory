@@ -12,3 +12,6 @@
 * [Statistical Learning with Sparsity](https://web.stanford.edu/~hastie/StatLearnSparsity_files/SLS_corrected_1.4.16.pdf)
 ### References for Practical Sessions:
 * [J P Vert's Courses](http://members.cbio.mines-paristech.fr/~jvert/teaching/)- This repository was handy when we were implementing the K-nearest neighbours for regression. 
+
+* [Machine Learning algorithm implementation](http://datacognizant.com/index.php/ml-algorithms-decoded/) from scratch
+

@@ -1,5 +1,9 @@
 # Theory of Ridge Regression
 
+## Lecture slides
+* [Model Selection](https://lagunita.stanford.edu/c4x/HumanitiesScience/StatLearning/asset/model_selection.pdf)- Statistical Learning Theory course of Stanford University
+
+
 ## Pre-requisites
 * [Lecture notes on Ridge Regression](https://arxiv.org/pdf/1509.09169.pdf)
 * [Ridge Regression](https://onlinecourses.science.psu.edu/stat857/node/155)- Course notes from **onlinepsu** on Ridge Regression

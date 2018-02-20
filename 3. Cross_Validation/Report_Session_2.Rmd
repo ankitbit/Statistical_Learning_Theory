@@ -1,0 +1,261 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+In this session, we are going to write an R function implementing the ridge regression penalization parameter λ choice based on the minimization of the mean squared prediction error in a validation set (MSPEval (λ)). 
+
+* Scaling
+* Centering
+* Standardization
+
+
+The Ridge  Regression estimator is defined as follows-
+$$
+\hat{\beta}_{ridge} = (X^TX + \lambda I_P)^{-1} X^T Y
+$$
+We define the matrix $H_\lambda$ as following-
+$$
+H_\lambda = X(X^TX + \lambda I_P)^{-1} X^T
+$$
+
+
+```{R fitting_ridge_regression}
+# lambda.v - contains the different values of tuning parameter
+# x_train - matrix of predictor variables corresponding to the training set
+# y_train - vector of prediction variable corresponding to the training set
+# x_validation - matrix of predictor variables corresponding to the validation set
+# y_validation - vector of predictor variable corresponding to the validation set
+
+
+ridge.reg <- function(x_train, y_train, lambda.v){
+  n <- nrow(x_train)
+  p <- ncol(x_train)
+  X <- scale(x_train, center = TRUE, scale = TRUE)
+  Y <- scale(y_train, center = TRUE, scale = FALSE)
+  n.lambdas = length(lambda.v)
+  
+  XtX <- t(X)%*%X
+  # matrix of coefficients (25 different values for each of the p variable)
+  # this matrix stores different values of parameters along 25 row for each p variable 
+  beta.path <- matrix(0,nrow=n.lambdas, ncol=p)
+  
+  # matrix H_lambda
+  diag.H.lambda <- matrix(0,nrow=n.lambdas, ncol=n)
+  
+  
+  for (l in 1:n.lambdas){ 
+    lambda <- lambda.v[l]
+    
+    H.lambda.aux <- t(solve(XtX + lambda*diag(1,p))) %*% t(X) 
+    beta.path[l,] <-  H.lambda.aux %*% Y
+    H.lambda <- X %*% H.lambda.aux 
+    diag.H.lambda[l,] <- diag(H.lambda)
+  }
+  fitted_coef <- as.matrix(beta.path)
+  return(fitted_coef)
+}
+```
+
+
+
+```{R}
+# t(solve(XtX + 20*diag(1, ncol(X)))) == solve(XtX + 20*diag(1, ncol(X)))
+hat_mat<- solve(XtX + 20*diag(1, ncol(X))) %*% t(X)
+pred <- hat_mat%*%Y_validate
+
+pred_self <- ridge.prostate.self[[1]]%*%Y
+
+library(glmnet)
+ridge.mod=glmnet (data.matrix(X),data.matrix(Y),alpha=0, lambda=c(20))
+predi <- predict(ridge.mod, data.matrix(X))
+```
+
+
+
+```{R creating_training_set}
+prostate <- Prostate_cancer_data_Fitxer
+train.sample <- which(prostate$train==TRUE)
+use.only <- train.sample
+# creating the training dataset as (X,Y)
+Y <- scale( prostate$lpsa[use.only], center=TRUE, scale=FALSE)
+X <- scale( as.matrix(prostate[use.only,1:8]), center=TRUE, scale=TRUE)
+```
+
+```{R creating_validation_set}
+prostate <- Prostate_cancer_data_Fitxer
+validation.sample <- which(prostate$train==FALSE)
+use.only <- validation.sample
+# creating X_validate and Y_validate as validation dataset
+Y_validate <- scale( prostate$lpsa[use.only], center=TRUE, scale=FALSE)
+X_validate <- scale( as.matrix(prostate[use.only,1:8]), center=TRUE, scale=TRUE)
+```
+
+
+```{R candidate_lambda_values}
+# defining sequence of 25 lambdas and storing the sequence in lambda.v
+lambda.max <- 1e5
+n.lambdas <- 25
+lambda.v <- exp(seq(0,log(lambda.max+1),length=n.lambdas))-1
+```
+
+```{R fiting_ridge_regression_models}
+# Implementation of RIdge Regression using user defined function
+ridge.prostate.user <- ridge.reg(X, Y, lambda.v = lambda.v)
+# Ridge regression using standard package MASS for comparison
+ridge.prostate.mass <- lm.ridge(Y ~ X, lambda = lambda.v)
+
+```
+
+
+```{R predicting_on_validation_set_using_two_methods}
+
+pred_mass <- X_validate%*%as.matrix(ridge.prostate.mass$coef)
+pred_user <- X_validate%*%t(as.matrix(ridge.prostate.user))
+#print(cbind(pred_mass[,1], pred_user[,1]))
+```
+
+```{R computing_PMSE}
+compute_PMSE <-function(){
+  
+  #obtaine the predicted values of Y for different lambdas
+  pred_mass <- as.matrix(X_validate%*%as.matrix(ridge.prostate.mass$coef))
+  pred_user <- as.matrix(X_validate%*%t(as.matrix(ridge.prostate.user)))
+  
+  PMSE_user <- numeric(length = ncol(pred_user))
+  PMSE_mass <- numeric(length = ncol(pred_mass))
+  
+  for (i in 1:length(lambda.v)) {
+    PMSE_user[i] <- mean((as.vector(pred_user[,i]) - Y_validate)^2)
+    PMSE_mass[i] <- mean((as.vector(pred_mass[,i]) - Y_validate)^2)
+  }
+  result <- data.frame(User = PMSE_user, Mass = PMSE_mass)
+  return(result)
+
+}
+```
+
+
+```{R function_K_fold_cross_validation}
+w <- sample(nrow(as.data.frame(rbind(X, X_validate))))
+folds <- cut(seq(1, nrow(as.data.frame(rbind(X, X_validate)))), breaks = 10, labels = F)
+X_Input <- as.data.frame(rbind(X, X_validate))
+Y_Input <- as.data.frame(rbind(Y, Y_validate)
+```
+
+
+
+                         
+
+```{R}
+K_fold_cross_validation <- function(X, Y, lambda.v, K=5) {
+  
+  # Randomly splitting training data (X , Y)
+  dataset <- as.data.frame(cbind(X_Input, Y_Input))
+  dataset <- dataset[sample(nrow(dataset)),]
+  # Generate the folds (that is, divide the randomly split data into k parts)
+  folds <- cut(seq(1, nrow(dataset)), breaks = 10, labels = F)
+  
+  # Define the vector of PMSE for each K
+  MSE <- numeric(length = K)
+  
+  for (i  in 1:K){
+    
+    # creation of training and validation data for K-th fold
+    validation_indices <- which(folds == i, arr.ind = TRUE)
+    X_valid <- as.matrix(dataset[validation_indices,  1:8])
+    X_train <- as.matrix(dataset[-validation_indices, 1:8])
+    Y_valid <- as.matrix(dataset[validation_indices,  9])
+    Y_train <- as.matrix(dataset[-validation_indices, 9])
+    
+    # fit the ridge regression model on K-th fold training data
+    ridge.prostate.model <- ridge.reg(X_train, Y_train, lambda.v = lambda.v)
+    
+    # predict using the ridge reression model on the K-th fold validation set
+    prediction <- as.matrix(X_valid%*%t(ridge.prostate.model))
+    
+    # evaluation of the K-th MSE
+    MSE[i] <- mean((prediction - matrix(rep(Y_valid, ncol(prediction)), 
+                                            ncol=ncol(prediction), 
+                                            nrow = nrow(prediction)))^2)
+  }
+  return(MSE)
+  
+
+}
+
+```
+
+```{R}
+
+K_fold_CV <- function(X, Y, lambda.v, K=5) {
+  
+  # Randomly splitting training data (X , Y)
+  dataset <- as.data.frame(cbind(X, Y))
+  dataset <- dataset[sample(nrow(dataset)),]
+  # Generate the folds (that is, divide the randomly split data into k parts)
+  folds <- cut(seq(1, nrow(dataset)), breaks = K, labels = F)
+  
+  # Define the vector of MSE_lambda for each lambda
+  MSE_lambda <- numeric(length = length(lambda.v))
+  # for each lambda
+  for ( j in 1:length(lambda.v)) {
+    # Define the vector of PMSE for each K
+    MSE <- numeric(length = K)
+    for (i  in 1:K){
+    
+    # creation of training and validation data for K-th fold
+    validation_indices <- which(folds == i, arr.ind = TRUE)
+    X_valid <- as.matrix(dataset[validation_indices,  1:8])
+    X_train <- as.matrix(dataset[-validation_indices, 1:8])
+    Y_valid <- as.matrix(dataset[validation_indices,  9])
+    Y_train <- as.matrix(dataset[-validation_indices, 9])
+    
+    # fit the ridge regression model on K-th fold training data
+    ridge.prostate.model <- ridge.reg(X_train, Y_train, lambda.v = lambda.v[j])
+    
+    # predict using the ridge reression model on the K-th fold validation set
+    prediction <- as.matrix(X_valid%*%t(ridge.prostate.model))
+    
+    # evaluation of the K-th MSE
+    MSE[i] <- mean((prediction - matrix(rep(Y_valid, ncol(prediction)), 
+                                            ncol=ncol(prediction), 
+                                            nrow = nrow(prediction)))^2)
+    }
+    MSE_lambda[j] <- mean(MSE)
+    
+    
+  }
+  result <- data.frame(cvm= MSE_lambda, lambda= lambda.v)
+  return(result)
+  
+}
+
+
+mse <- K_fold_cross_validation(X, Y, lambda.v = lambda.v, K=10 )
+W <- K_fold_CV(X, Y, lambda.v, K=5)
+rho <- sort(W$cvm, decreasing = T)
+
+
+plot(W$cvm, W$lambda)
+
+```
+
+```{R}
+z <- compute_PMSE()
+par( mfrow=c(1,2) )
+plot(sort(lambda.v, decreasing = T), z[,1], type = 'b', col="orange", lwd=3 )
+plot(sort(lambda.v, decreasing = T), z[,2], type = 'b', col="darkgreen", lwd=3 )
+
+```
+```{R visualizing_log_lambda_versus_PMSE}
+par(mfrow=c(1,2))
+plot(sort((log(1+lambda.v)-1), decreasing = T), z[,1], type = 'b', col="orange",
+     lwd=3, main = expression("PMSE versus"~"log"~(lambda+1)-1), 
+     xlab = expression("log"~(lambda + 1)~"-1"),
+     ylab = "PMSE (User Defined Function")
+plot(sort((log(1+lambda.v)-1), decreasing = T), z[,2], type = 'b', col="darkgreen",
+     lwd=3, main = expression("PMSE versus"~"log"~(lambda+1)-1),
+     xlab = expression("log"~(lambda + 1)~"-1"),
+     ylab = "PMSE (MASS Package)")
+```

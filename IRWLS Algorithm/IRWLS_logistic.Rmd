@@ -1,0 +1,148 @@
+---
+title: "IRWLS algorithm for MLE in logistic regression"
+subtitle: Burn injuries data
+output:
+  html_document:
+    df_print: paged
+---
+
+
+### Logistic regression using our own IRWLS algorithm
+
+An auxiliary function: 
+```{r}
+p.from.beta <- function(beta,x){
+  lin.term <- beta[1] + x %*% beta[-1]
+  e.lt <- exp(lin.term)
+  p <- e.lt/(1+e.lt)
+  return(list(p=p,lt=lin.term))
+}
+```
+
+The main function: 
+```{r}
+logistic.IRWLS <- function(x,y,weights.out=1,x.new=x,
+                           max.iter=10,eps.beta=1e-5,
+                           plts=FALSE){
+  if (plts&(dim(as.matrix(x))[2]>1)){
+    plts<-FALSE
+    warning("Plots are valid only when dim(x)[2]==1")
+  }
+  # Step 0
+  stop.rule <- FALSE
+  iter <- 0
+  beta.0 <- coef(lm(y~x)) 
+  
+  while (!stop.rule){
+    iter <- iter + 1 
+    # step 1
+    p.lt <- p.from.beta(beta.0,x)
+    p <- p.lt$p
+    lt <- p.lt$lt
+    ps.e <- (y-p)/(p*(1-p))
+    z <- lt + ps.e 
+    wt <- p*(1-p) *weights.out
+    
+    if (plts){
+      op<-par(mfrow=c(1,2))
+      plot(x,y,cex=8*wt)
+      lines(x,p,col=2)
+      plot(x,z,cex=8*wt)
+      lines(x,lt,col=2)
+      par(op)
+    }
+    
+    lm.1 <- lm(z~x,weights = wt) 
+    beta.1 <- coef(lm.1)
+    
+    # checking stop rules
+    if ((iter>=max.iter)|(sum((beta.1-beta.0)^2)<eps.beta)){
+      stop.rule<-TRUE
+    } else {
+      beta.0 <- beta.1
+    }
+  }
+  
+  aux <- summary(lm.1)
+  p.lt <- p.from.beta(beta.1,x)
+  p <- p.lt$p
+  lt <- p.lt$lt
+  se.beta <- diag(aux$cov.unscaled)^.5
+  null.devi <- sum(-2*dbinom(y,1,mean(y),log=TRUE))
+  resid.devi <- sum(-2*dbinom(y,1,p,log=TRUE))
+  
+  return(list(coefficients=beta.1, se.coef=se.beta,
+              fitted.values=p,linear.predictors=lt,
+              predicted.values=p.from.beta(beta.1,x.new)$p,
+              null.deviance=null.devi,
+              residual.deviance=resid.devi)
+         )
+} 
+```
+
+### Logistic regression for Burn Injuries Data
+
+The *Burn injuries dataset* (Fan, J. and I. Gijbels (1996). *Local polynomial modelling and its applications*) contains data from 435 adults (between ages 17 and 85) suffering from burn injuries.
+It includes two variables:
+
+* `surv`: The binary response variable is taken to be 1 for those victims who survived their burn injuries and zero otherwise.
+* `lgae`: log(area of third degree burn + 1) is taken as a covariate.
+
+The conditional expectation of `surv` given a level of `lgae` is the conditional probability of 
+	survival given this particular value of `lgae`.
+
+Apply the previous function to the estimation of the parameters of the logistic regression in the  *burn injuries data dataset* (file `burn.cont.dat`).
+
+Reeding the data from a file:
+```{r}
+burns <-read.table("burn.cont.dat", head=T, sep=" ")
+lgae <- burns[,2]
+perm <- order(lgae)
+lgae <- lgae[perm]
+superv <- burns[perm,3]
+```
+
+Logistic regression using our own IRWLS algorithm:
+```{r} 
+x <- 
+y <- superv
+
+max.iter <- 10
+eps.beta <- 1e-5 
+plts <- TRUE
+
+our.glm.burn <- logistic.IRWLS(x=matrix(lgae,ncol=1), y=superv, 
+               weights.out=1, max.iter=10,
+               eps.beta=1e-5, plts=TRUE)
+
+# names(our.glm.burn)
+# [1] "coefficients"      "se.coef"           "fitted.values"     "linear.predictors"
+# [5] "predicted.values"  "null.deviance"     "residual.deviance"
+``` 
+Coefficient | Estimate | Std. Error
+----------- | -------- | -----------
+`r names(our.glm.burn$coefficients)[1]`|`r our.glm.burn$coefficients[1]`|`r our.glm.burn$se.coef[1]`
+`r names(our.glm.burn$coefficients)[2]`|`r our.glm.burn$coefficients[2]`|`r our.glm.burn$se.coef[2]`
+
+Null Deviance:      `r our.glm.burn$null.deviance`
+
+Residual Deviance:  `r our.glm.burn$residual.deviance`
+
+### Comparing with `glm` of R
+
+Compare your result with that obtained with the function `glm` of R.
+How much of the information you get when doing the `summary` of the object produced by `glm` could you obtain from your algorithm?
+
+Fitting the logistic regresion using glm
+```{r}
+glm.burn <- glm(superv~lgae,family=binomial())
+summary(glm.burn)
+```
+
+Comparing glm results and our own results:
+```{r}
+plot(lgae,superv,main="Burn injuries data. Logistic regression")
+lines(lgae,glm.burn$fitted.values,col=4)
+lines(lgae,our.glm.burn$fitted.values,col=2, lty=2)
+legend("bottomleft",c("glm","our glm"),col=c(4,2),lty=c(1,2))
+```

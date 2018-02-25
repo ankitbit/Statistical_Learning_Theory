@@ -17,7 +17,11 @@ Analysis of Variance: Fixed Effects, Experimental Design, Penalized Regression, 
 
 ### Advanced Textual References:
 * [Statistical Learning with Sparsity](https://web.stanford.edu/~hastie/StatLearnSparsity_files/SLS_corrected_1.4.16.pdf)
+
 ### References for Practical Sessions:
+* [Stanford Statistical Learning Software](http://statweb.stanford.edu/~tibs/statlearningsoft.html): 
+This is a collection of R packages written by current and former members of the labs of Trevor Hastie, Jon Taylor and Rob Tibshirani. All of these packages are actively supported by their authors. 
+
 * [J P Vert's Courses](http://members.cbio.mines-paristech.fr/~jvert/teaching/)- This repository was handy when we were implementing the K-nearest neighbours for regression. 
 
 * [Machine Learning algorithm implementation](http://datacognizant.com/index.php/ml-algorithms-decoded/) from scratch

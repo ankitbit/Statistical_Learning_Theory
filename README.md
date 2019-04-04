@@ -1,5 +1,8 @@
 # Statistical Learning Theory
 
+## Mathematical Background
+- [MA 575](http://math.bu.edu/people/cgineste/classes/ma575/w/index.html): Linear Models taught at Boston University
+- [MA 751](http://math.bu.edu/people/mkon/MA751/): Taught at Boston University by M. Kon, Math and Statistics Department Email: mkon@bu.edu
 
 
 ### Reference Courses

@@ -29,3 +29,6 @@ This is a collection of R packages written by current and former members of the 
 
 * [Machine Learning algorithm implementation](http://datacognizant.com/index.php/ml-algorithms-decoded/) from scratch
 
+
+### Other Sources:
+- [Scatterplot Smooting](http://madrury.github.io/)

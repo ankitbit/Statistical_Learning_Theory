@@ -32,3 +32,5 @@ This is a collection of R packages written by current and former members of the 
 
 ### Other Sources:
 - [Scatterplot Smooting](http://madrury.github.io/)
+
+Read from UC Berkley corse repo

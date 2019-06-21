@@ -6,6 +6,7 @@
 
 
 ### Reference Courses
+* [CS 4780: Machine Learning for Intelligent Systems by Cornell University](http://www.cs.cornell.edu/courses/cs4780/2018fa/syllabus/index.html)
 * [Statistics 203](http://statweb.stanford.edu/~jtaylo/courses/stats203/)- Stanford University's taugh courseware on **Introduction to Regression Models and Analysis of Variance**, covering topics Simple Linear Regression, Multiple Linear Regression, Polynomial Regression, Model Selection for Mupltiple Linear Models, Multiple Linear Regression -- Diagnostics,
 Analysis of Variance: Fixed Effects, Experimental Design, Penalized Regression, Robust Regression, Nonlinear Regression, Generalized Linear Models, Mixed Effects Models, Time Series Regression: Correlated Errors, Functional Linear Models, Additive Models
 * [Uncertainty, Design, and Optimization](http://people.duke.edu/~hpgavin/cee201/)- Duke University taught curriculum. 
